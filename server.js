@@ -71,7 +71,11 @@ function Server (btClient, opts) {
   }
 
   function onRequest (req, res) {
-    var pathname = url.parse(req.url).pathname
+    var parsedUrl = url.parse(req.url, true);
+    var pathname = parsedUrl.pathname
+    var queryString = parsedUrl.query
+
+    console.log(req.method +' request '+ req.url);
 
     if (pathname === '/favicon.ico') {
       return serve404Page()
@@ -150,8 +154,7 @@ function Server (btClient, opts) {
       res.statusCode = 200
       res.setHeader('Content-Type', 'video/mp4'); //mime.getType(file.name))
 
-      // Support range-requests
-      res.setHeader('Accept-Ranges', 'bytes')
+      const fileNeedsTranscoding = Transcoder.needsTranscoding(file.name);
 
       // Set name of file (for "Save Page As..." dialog)
       /*res.setHeader(
@@ -159,42 +162,60 @@ function Server (btClient, opts) {
         'inline; filename*=UTF-8\'\'' + encodeRFC5987(file.name)
       )*/
 
-      // Support DLNA streaming
+      /*/ Support DLNA streaming
       res.setHeader('transferMode.dlna.org', 'Streaming')
       res.setHeader(
         'contentFeatures.dlna.org',
         'DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000'
-      )
+      )*/
 
-      // `rangeParser` returns an array of ranges, or an error code (number) if
-      // there was an error parsing the range.
-      var range = rangeParser(file.length, req.headers.range || '')
-
-      if (Array.isArray(range)) {
-        res.statusCode = 206 // indicates that range-request was understood
-
-        // no support for multi-range request, just use the first range
-        range = range[0]
-
-        res.setHeader(
-          'Content-Range',
-          'bytes ' + range.start + '-' + range.end + '/' + file.length
-        )
-        res.setHeader('Content-Length', range.end - range.start + 1)
+      /*
+        File needs transcoding, so we will use time ranges instead of bytes ranges.
+       */
+      if(fileNeedsTranscoding) {
+        // Disable range-requests in bytes
+        res.setHeader('Accept-Ranges', 'none')
+      
+      /*
+        File does not needs transcoding, so we can use byte-ranges.
+       */
       } else {
-        range = null
-        res.setHeader('Content-Length', file.length)
+        // Disable range-requests
+        res.setHeader('Accept-Ranges', 'bytes')
+      
+        // `rangeParser` returns an array of ranges, or an error code (number) if
+        // there was an error parsing the range.
+        var range = rangeParser(file.length, req.headers.range || '')
+  
+        if (Array.isArray(range)) {
+          res.statusCode = 206 // indicates that range-request was understood
+  
+          // no support for multi-range request, just use the first range
+          range = range[0]
+  
+          res.setHeader(
+            'Content-Range',
+            'bytes ' + range.start + '-' + range.end + '/' + file.length
+          )
+          res.setHeader('Content-Length', range.end - range.start + 1)
+        } else {
+          range = null
+          res.setHeader('Content-Length', file.length)
+        }
       }
 
       if (req.method === 'HEAD') {
         return res.end()
       }
 
-      if(Transcoder.needsTranscoding(file.name)) {
+      if(fileNeedsTranscoding) {
         // Cannot use stream as input and output as it can cause deadlocks in Node.js. (https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/380)
         const tmpFile = path.join(os.tmpdir(), 'webtorrent-otf-transcode.mp4');
 
-        transcoder.transcode(file.createReadStream(range), tmpFile, {
+        const seekTime = queryString && queryString.time ? queryString.time : 0;
+
+        transcoder.transcode(file.createReadStream(), tmpFile, {
+          seek: seekTime,
           onStart: async () => {
             //pump(fs.createReadStream(tmpFile), res)
 
@@ -224,7 +245,7 @@ function Server (btClient, opts) {
             console.log('Transcode progress', progress);
           },
           onError: (e) => {
-            console.log('Transcode error');
+            console.log('Transcode error, removing tmp file.');
             fs.unlink(tmpFile);
           }
         }).catch((reason) => {

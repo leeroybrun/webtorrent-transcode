@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html class=''>
+  <head>
+    <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/video.js/6.4.0/video-js.css'>
+  </head>
+  <body>
+    <video id="vid1" controls class="video-js vjs-default-skin vjs-big-play-centered" width="640" height="360" preload="auto">
+      <source src="http://localhost:3333/a2c1adc668fc25bdcb137d43060b76cd043a7fdb/0" type='video/mp4'>
+    </video>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/video.js/6.4.0/video.js'></script>
+    <script>
+      var Plugin = videojs.getPlugin('plugin');
+      
+      var TimeRangesSeeking = videojs.extend(Plugin, {
+      
+        constructor: function(player, options) {
+          Plugin.call(this, player, options);
+          
+          player.ready(function(){
+            console.log('player', player);
+            
+            var baseSrc = player.src();
+      
+            var seekBar = player.controlBar.progressControl.seekBar;
+            seekBar._timeOffset = 0;
+            
+            // Handle mouse move, to request new time based content from server
+            var _seekBarHandleMouseMove = seekBar.handleMouseMove;
+            seekBar.handleMouseMove = function(event) {
+              let newTime = this.calculateDistance(event) * this.player_.duration();
+      
+              // Don't let video end while scrubbing.
+              if (newTime === this.player_.duration()) {
+                newTime = newTime - 0.1;
+              }
+      
+              console.log('set new src', baseSrc+'?time='+newTime);
+              this._timeOffset = newTime;
+              this.player_.src({type: 'video/mp4', src: baseSrc+'?time='+newTime});
+            }
+            seekBar.handleMouseMove.bind(seekBar);
+            
+            // Get current time, add time offset
+            var _seekBarGetCurrentTime_ = seekBar.getCurrentTime_;
+            seekBar.getCurrentTime_ = function() {
+              console.log('getCurrentTime timeOffset', this._timeOffset);
+              return ((this.player_.scrubbing()) ?
+                this.player_.getCache().currentTime :
+                this.player_.currentTime()) + (this._timeOffset || 0);
+            }
+            seekBar.getCurrentTime_.bind(seekBar);
+          });
+      
+          player.on("timeupdate", function(event) {
+            //console.log('timeupdate', player.currentTime());
+          });
+          
+          player.on("seeking", function(event) {
+            console.log('seeking', player.currentTime());
+          });
+      
+          player.on("seeked", function(event) {
+            console.log('seeked', player.currentTime());
+          });
+      
+          player.on('playing', function() {
+            videojs.log('playback began!');
+          });
+        }
+      });
+      
+      videojs.registerPlugin('timeRangesSeeking', TimeRangesSeeking);
+      
+      if (document.getElementById("vid1")) {
+        videojs("vid1", {
+          plugins: {
+            timeRangesSeeking: {}
+          }
+        }).ready(function() {
+          // Force duration
+          var player = this;
+          player.duration(1000);
+          player.on("durationchange", function(event) {
+            player.duration(1000);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

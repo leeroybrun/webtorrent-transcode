@@ -45,6 +45,17 @@ const TRANSCODER_STATUS = {
         - https://github.com/jhiesey/videostream/issues/29
       Ffmpeg stream :
         - https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/380
+      Seeking :
+        - https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/684
+        - https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/137
+        - https://stackoverflow.com/questions/10947896/seeking-video-while-transcoding-with-ffmpeg
+
+        - Inject JS in HTML5 player to get seek position with time and not bytes
+        - Seek with Ffmpeg (time range) and not with createReadStream
+      Filtering:
+        - Only transcode needed parts/formats
+        - Don't transcode MP4
+        - MKV only transcode audio? (https://www.reddit.com/r/Chromecast/comments/22wbge/videostream_now_supports_all_file_formats/cgrc8og/)
   */
 
 // Service to play videos files
@@ -63,10 +74,11 @@ class Transcoder {
     if(this.command && this.status === TRANSCODER_STATUS.RUNNING) {
       console.log('Killing previous Ffmpeg process for this transcoder.');
       this.command.kill();
+      this.command = null;
     }
   }
 
-  async transcode(input, output, events = {}) {
+  async transcode(input, output, options = {}) {
     this.killPreviousProcess();
 
     return new Promise((resolve, reject) => {
@@ -87,8 +99,8 @@ class Transcoder {
           '-threads 1', // 0
           '-crf 22', // https://trac.ffmpeg.org/wiki/Encode/H.264#a1.ChooseaCRFvalue
           '-movflags faststart', // https://superuser.com/questions/438390/creating-mp4-videos-ready-for-http-streaming
-          '-maxrate 2500k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-maxrate
-          '-bufsize 5000k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-bufsize
+          //'-maxrate 2500k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-maxrate
+          //'-bufsize 5000k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-bufsize
           '-preset ultrafast', // https://trac.ffmpeg.org/wiki/Encode/H.264#a2.Chooseapreset
           '-tune zerolatency', // https://superuser.com/a/564404,
           '-movflags isml+frag_keyframe',
@@ -97,16 +109,16 @@ class Transcoder {
         .format('mp4')
         .on('start', function(commandLine) {
           console.log('Transcoding started.');
-          events.onStart && events.onStart(commandLine);
+          options.onStart && options.onStart(commandLine);
         })
         .on('progress', progress => {
           console.log(progress);
-          events.onProgress && events.onProgress(progress);
+          options.onProgress && options.onProgress(progress);
         })
         .on('error', e => {
           console.log('Transcoding error.');
+          this.killPreviousProcess();
           this.status = TRANSCODER_STATUS.ERROR;
-          this.command = null;
           return reject(e);
         })
         /*.on('stderr', (stderrLine) => {
@@ -114,10 +126,15 @@ class Transcoder {
         })*/
         .on('end', () => {
           console.log('Transcoding ended.');
+          this.killPreviousProcess();
           this.status = TRANSCODER_STATUS.ENDED;
-          this.command = null;
           return resolve();
         });
+
+        if(options.seek) {
+          console.log('Seeking input to '+ options.seek);
+          this.command.seekInput(options.seek);
+        }
 
         this.command.run();
     });
