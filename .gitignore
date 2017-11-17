@@ -1,6 +1,5 @@
-vendor
-
-!.gitkeep
+vendor/*
+!vendor/.gitkeep 
 
 # Logs
 logs
