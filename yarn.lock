@@ -280,9 +280,9 @@ flatten@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/flatten/-/flatten-1.0.2.tgz#dae46a9d78fbe25292258cc1e780a41d95c03782"
 
-fluent-ffmpeg@^2.1.2:
+"fluent-ffmpeg@https://github.com/leeroybrun/node-fluent-ffmpeg#ffprobe-input-stream-win":
   version "2.1.2"
-  resolved "https://registry.yarnpkg.com/fluent-ffmpeg/-/fluent-ffmpeg-2.1.2.tgz#c952de2240f812ebda0aa8006d7776ee2acf7d74"
+  resolved "https://github.com/leeroybrun/node-fluent-ffmpeg#d090e83209b0ef463f68f5aa3d23a5dccad659f9"
   dependencies:
     async ">=0.2.9"
     which "^1.1.1"

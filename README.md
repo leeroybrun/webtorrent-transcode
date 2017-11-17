@@ -1,6 +1,11 @@
 # webtorrent-transcode
 Attempt to transcode and stream torrents downloaded with WebTorrent using FFmpeg
 
+## How to use
+
+- Download ffmpeg/ffprobe from https://ffmpeg.zeranoe.com/builds/
+- Place the executable files in the vendor/ folder
+
 ## Work to do
 
 - [ ] Seeking

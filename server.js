@@ -139,6 +139,20 @@ function Server (btClient, opts) {
       serveFile(file)
     }
 
+    function serveIndexPage () {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'text/html')
+
+      fs.readFile(path.join(__dirname, 'client.html'), (error, content) => {
+        if (error) {
+          response.writeHead(500);
+          return response.end(''+ error);
+        }
+
+        return res.end(content)
+      });
+    }
+
     function serve404Page () {
       res.statusCode = 404
       res.setHeader('Content-Type', 'text/html')
@@ -152,6 +166,20 @@ function Server (btClient, opts) {
 
     function serveFile (file) {
       res.statusCode = 200
+
+      if(queryString && 'metadata' in queryString) {
+        console.log('querying metadata');
+        transcoder.getMetadata(file.createReadStream()).then((metadata) => {
+          console.log('metadata', metadata);
+          return res.end(JSON.stringify(metadata));
+        }).catch(reason => {
+          console.log(reason);
+          return res.end();
+        });
+
+        return;
+      }
+
       res.setHeader('Content-Type', 'video/mp4'); //mime.getType(file.name))
 
       const fileNeedsTranscoding = Transcoder.needsTranscoding(file.name);

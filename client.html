@@ -12,6 +12,11 @@
     <script>
       var Plugin = videojs.getPlugin('plugin');
       
+       /**
+       *  Instead of byte-ranges for seeking, we use time-ranges.
+       *  This way we can pass it directly to ffmpeg to transcode the media from the specified time.
+       *  Byte-ranges (Accept-Ranges: bytes) should be disabled on the server for media beign transcoded to prevent the browser to try to use them.
+       */
       var TimeRangesSeeking = videojs.extend(Plugin, {
       
         constructor: function(player, options) {
@@ -34,6 +39,11 @@
               if (newTime === this.player_.duration()) {
                 newTime = newTime - 0.1;
               }
+
+              // While scrubbing, prevent calls to the server to prevent launching useless ffmpeg processes
+              if(this.player_.scrubbing()) {
+                return;
+              }
       
               console.log('set new src', baseSrc+'?time='+newTime);
               this._timeOffset = newTime;
@@ -44,7 +54,6 @@
             // Get current time, add time offset
             var _seekBarGetCurrentTime_ = seekBar.getCurrentTime_;
             seekBar.getCurrentTime_ = function() {
-              console.log('getCurrentTime timeOffset', this._timeOffset);
               return ((this.player_.scrubbing()) ?
                 this.player_.getCache().currentTime :
                 this.player_.currentTime()) + (this._timeOffset || 0);
@@ -52,7 +61,7 @@
             seekBar.getCurrentTime_.bind(seekBar);
           });
       
-          player.on("timeupdate", function(event) {
+          /*player.on("timeupdate", function(event) {
             //console.log('timeupdate', player.currentTime());
           });
           
@@ -66,24 +75,86 @@
       
           player.on('playing', function() {
             videojs.log('playback began!');
-          });
+          });*/
         }
       });
       
       videojs.registerPlugin('timeRangesSeeking', TimeRangesSeeking);
+
+      /**
+       *  Call the server with ?metadata to get meta from ffprobe for the currently played media.
+       *  This way we can set the duration of the media, even if it's beign transcoded.
+       */
+      var DurationFromServer = videojs.extend(Plugin, {
+      
+        constructor: function(player, options) {
+          Plugin.call(this, player, options);
+
+          var plugin = this;
+
+          this._cachedDurations = {};
+          
+          player.ready(function(){  
+            plugin.setPlayerDurationFromServer(player);
+            
+            player.on('durationchange', function(event) {
+              plugin.setPlayerDurationFromServer(player);
+            });
+          });
+        },
+
+        getUrlWithoutTime: function(url) {
+          return url.split('?time=')[0];
+        },
+
+        getCachedDuration: function(url) {
+          var urlWithoutTime = this.getUrlWithoutTime(url);
+          if(urlWithoutTime in this._cachedDurations) {
+            return this._cachedDurations[urlWithoutTime];
+          }
+          return null;
+        },
+
+        setCachedDuration: function(url, duration) {
+          var urlWithoutTime = this.getUrlWithoutTime(url);
+          this._cachedDurations[urlWithoutTime] = duration;
+          return this._cachedDurations[urlWithoutTime];
+        },
+
+        setPlayerDurationFromServer: function(player) {
+          this.getDuration(player.src()).then(function(duration) {
+            if(player.duration() !== duration) {
+              player.duration(duration);
+            }
+          });
+        },
+        
+        getDuration: function(url) {
+          var duration = this.getCachedDuration(url);
+          if(duration !== null) {
+            return Promise.resolve(duration);
+          }
+
+          var plugin = this;
+
+          return fetch(url+'?metadata')
+          .then((resp) => resp.json())
+          .then(function(metadata) {
+            return plugin.setCachedDuration(url, metadata.format.duration);
+          });
+        }
+      });
+      
+      videojs.registerPlugin('durationFromServer', DurationFromServer);
       
       if (document.getElementById("vid1")) {
         videojs("vid1", {
           plugins: {
-            timeRangesSeeking: {}
+            timeRangesSeeking: {},
+            durationFromServer: {}
           }
         }).ready(function() {
-          // Force duration
-          var player = this;
-          player.duration(1000);
-          player.on("durationchange", function(event) {
-            player.duration(1000);
-          });
+          
         });
       }
     </script>

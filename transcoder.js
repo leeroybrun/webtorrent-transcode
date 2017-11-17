@@ -109,6 +109,7 @@ class Transcoder {
         .format('mp4')
         .on('start', function(commandLine) {
           console.log('Transcoding started.');
+          console.log(commandLine);
           options.onStart && options.onStart(commandLine);
         })
         .on('progress', progress => {
@@ -140,8 +141,20 @@ class Transcoder {
     });
   }
 
+  async getMetadata(input) {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(input, (err, metadata) => {
+        if(err) {
+          return reject(err);
+        }
+
+        return resolve(metadata);
+      });
+    });
+  }
+
   static setFfmpegPath() {
-    let ffmpegPath = path.join(__dirname, 'vendor', 'ffmpeg-3.3.2');
+    let ffmpegPath = path.join(__dirname, 'vendor', 'ffmpeg');
     
     const platform = os.platform();
     
@@ -156,9 +169,27 @@ class Transcoder {
       console.log('Missing ffmpeg executable for platform "' + platform + '" with arch "' + arch() + '". Will try to use the ffmpeg installed on the system.');
     }
   }
+  
+  static setFfprobePath() {
+    let ffprobePath = path.join(__dirname, 'vendor', 'ffprobe');
+    
+    const platform = os.platform();
+    
+    if (platform === 'win32') {
+      ffprobePath += '.exe';
+    }
+
+    try {
+      const stats = fs.statSync(ffprobePath);
+      ffmpeg.setFfprobePath(ffprobePath);
+    } catch(e) {
+      console.log('Missing ffprobe executable for platform "' + platform + '" with arch "' + arch() + '". Will try to use the ffmpeg installed on the system.');
+    }
+  }
 }
 
 // Sync method to set Ffmpeg path, only called once for all transcoders
 Transcoder.setFfmpegPath();
+Transcoder.setFfprobePath();
 
 module.exports = Transcoder;

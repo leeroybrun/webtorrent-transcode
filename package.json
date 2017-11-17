@@ -19,7 +19,7 @@
   "homepage": "https://github.com/leeroybrun/webtorrent-transcode#readme",
   "dependencies": {
     "arch": "^2.1.0",
-    "fluent-ffmpeg": "^2.1.2",
+    "fluent-ffmpeg": "https://github.com/leeroybrun/node-fluent-ffmpeg#ffprobe-input-stream-win",
     "fs-extra": "^4.0.2",
     "mime": "^2.0.3",
     "pump": "^1.0.2",
