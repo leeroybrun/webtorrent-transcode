@@ -15,6 +15,7 @@ Attempt to transcode and stream torrents downloaded with WebTorrent using FFmpeg
 ## So, how does it works?
 
 - On-the-fly transcoding with ffmpeg
+
   We check if the file needs transcoding, if not, we stream it directly from WebTorrent to the client.
   In this case, we accept byte-ranges requests to seek inside the media.
 
@@ -27,11 +28,13 @@ Attempt to transcode and stream torrents downloaded with WebTorrent using FFmpeg
 
 - Plugins for Video.js
     - Time-ranges seeking
+
       When we move the SeekBar of Video.js, we then send a request to the server with our new time-range.
       We then change the source on the player, and save the time offset (our new time range).
       When we display the progress, we use the time offset (where we have seeked) + currentTime of the player.
 
     - Media duration querying
+
       When transcoding, we don't know the duration of the video.
       We query the server with the ?metadata URL query to get if from ffprobe.
       We then force it on the player.
@@ -39,17 +42,20 @@ Attempt to transcode and stream torrents downloaded with WebTorrent using FFmpeg
 ## Todo
 
 - [ ] Real duration?
-      Video.js does display which duration?
-      Does .duration() should be the remaining duration, or total duration?
+
+  Video.js does display which duration?
+  Does .duration() should be the remaining duration, or total duration?
 - [ ] Green artifacts when seeking
-      Green artifacts are apperaing when seeking.
-      Once the image change/camera move, the green parts are replaced with the real images.
+
+  Green artifacts are apperaing when seeking.
+  Once the image change/camera move, the green parts are replaced with the real images.
 - [ ] Transcode only what is needed
-      MKV may need only audio to be transcoded?
-      - https://www.reddit.com/r/Chromecast/comments/22wbge/videostream_now_supports_all_file_formats/cgrc8og/
+
+  MKV may need only audio to be transcoded?
+  - https://www.reddit.com/r/Chromecast/comments/22wbge/videostream_now_supports_all_file_formats/cgrc8og/
 - [ ] Use static ffmpeg?
-      - https://github.com/eugeneware/ffmpeg-static
-      - https://github.com/joshwnj/ffprobe-static
+  - https://github.com/eugeneware/ffmpeg-static
+  - https://github.com/joshwnj/ffprobe-static
 - [x] Seeking
       Seeking does not works now as transcoding is implemented.
       We should not seek with createReadStream but directly with ffmpeg.
