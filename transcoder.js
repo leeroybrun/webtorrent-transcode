@@ -102,17 +102,23 @@ class Transcoder {
         .audioCodec('aac')
         // TODO: check settings for quality
         .addOption([
+          // Try to remove green artifacts when seeking
           //'-vf yadif',
+          //'-flags2 -fastpskip',
+          //'-fast-pskip 0',
+          //'-g 30', // Forces (at least) every 30nd frame to be a keyframe
+
           '-threads 1', // 0
           '-crf 22', // https://trac.ffmpeg.org/wiki/Encode/H.264#a1.ChooseaCRFvalue
           //'-movflags faststart', // https://superuser.com/questions/438390/creating-mp4-videos-ready-for-http-streaming
-          //'-maxrate 2500k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-maxrate
-          //'-bufsize 5000k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-bufsize
           '-preset ultrafast', // https://trac.ffmpeg.org/wiki/Encode/H.264#a2.Chooseapreset
           '-tune zerolatency', // https://superuser.com/a/564404,
           '-movflags isml+frag_keyframe+empty_moov',
           '-f ismv',
-          //'-g 30', // Forces (at least) every 52nd frame to be a keyframe
+
+          // Probably don't need this as we are outputing to a temp file
+          //'-maxrate 2500k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-maxrate
+          //'-bufsize 5000k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-bufsize
         ])
         .format('mp4')
         .on('start', function(commandLine) {

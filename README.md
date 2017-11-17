@@ -49,6 +49,7 @@ Attempt to transcode and stream torrents downloaded with WebTorrent using FFmpeg
 - [ ] Green artifacts when seeking
   Green artifacts are apperaing when seeking.
   Once the image change/camera move, the green parts are replaced with the real images.
+  Disable fastpskip? https://sites.google.com/site/linuxencoding/x264-ffmpeg-mapping
 - [ ] Transcode only what is needed
   MKV may need only audio to be transcoded?
   - https://www.reddit.com/r/Chromecast/comments/22wbge/videostream_now_supports_all_file_formats/cgrc8og/
