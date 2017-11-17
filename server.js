@@ -73,7 +73,7 @@ function Server (btClient, opts) {
     socket.once('close', function () {
       console.log('close socket');
       arrayRemove(sockets, sockets.indexOf(socket))
-      transcoder.killProcess();
+      //transcoder.killProcess();
     })
   }
 
@@ -248,15 +248,15 @@ function Server (btClient, opts) {
         // Cannot use stream as input and output as it can cause deadlocks in Node.js. (https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/380)
         const tmpFile = path.join(os.tmpdir(), 'webtorrent-otf-transcode.mp4');
 
-        const seekTime = queryString && queryString.time ? queryString.time : 0;
+        const seekTime = queryString && queryString.time ? parseInt(queryString.time) : 0;
 
         transcoder.transcode(file.createReadStream(), tmpFile, {
           seek: seekTime,
           onStart: async () => {
             //pump(fs.createReadStream(tmpFile), res)
 
-            // Wait for transcoding to start and file to be writed a bit before streaming it
-            await sleep(10000);
+            // Wait for transcoding to start and file to be writen a bit before streaming it
+            await sleep(5000);
 
             //const readStream = GrowingFile.open(tmpFile);
             const readStream = fs.createReadStream(tmpFile);

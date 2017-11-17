@@ -1,5 +1,7 @@
 vendor
 
+!.gitkeep
+
 # Logs
 logs
 *.log

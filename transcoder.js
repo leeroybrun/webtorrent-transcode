@@ -6,6 +6,10 @@ const arch = require('arch');
 const mime = require('mime');
 const ffmpeg = require('fluent-ffmpeg');
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const TRANSCODER_STATUS = {
   RUNNING: 'running',
   ENDED: 'ended',
@@ -75,11 +79,13 @@ class Transcoder {
       console.log('Killing previous Ffmpeg process for this transcoder.');
       this.command.kill();
       this.command = null;
+
+      return sleep(1000);
     }
   }
 
   async transcode(input, output, options = {}) {
-    this.killProcess();
+    await this.killProcess(); // We have to wait some time for the process to be killed, otherwise we will kill the new process we just started...
 
     return new Promise((resolve, reject) => {
       this.status = TRANSCODER_STATUS.RUNNING;
@@ -96,15 +102,17 @@ class Transcoder {
         .audioCodec('aac')
         // TODO: check settings for quality
         .addOption([
+          //'-vf yadif',
           '-threads 1', // 0
           '-crf 22', // https://trac.ffmpeg.org/wiki/Encode/H.264#a1.ChooseaCRFvalue
-          '-movflags faststart', // https://superuser.com/questions/438390/creating-mp4-videos-ready-for-http-streaming
+          //'-movflags faststart', // https://superuser.com/questions/438390/creating-mp4-videos-ready-for-http-streaming
           //'-maxrate 2500k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-maxrate
           //'-bufsize 5000k', // https://trac.ffmpeg.org/wiki/EncodingForStreamingSites#a-bufsize
           '-preset ultrafast', // https://trac.ffmpeg.org/wiki/Encode/H.264#a2.Chooseapreset
           '-tune zerolatency', // https://superuser.com/a/564404,
-          '-movflags isml+frag_keyframe',
+          '-movflags isml+frag_keyframe+empty_moov',
           '-f ismv',
+          //'-g 30', // Forces (at least) every 52nd frame to be a keyframe
         ])
         .format('mp4')
         .on('start', function(commandLine) {
@@ -116,8 +124,8 @@ class Transcoder {
           console.log(progress);
           options.onProgress && options.onProgress(progress);
         })
-        .on('error', e => {
-          console.log('Transcoding error.');
+        .on('error', (e, a1, a2) => {
+          console.log('Transcoding error.', e);
           this.killProcess();
           this.status = TRANSCODER_STATUS.ERROR;
           return reject(e);
