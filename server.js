@@ -8,6 +8,7 @@ var mime = require('mime')
 var pump = require('pump')
 var rangeParser = require('range-parser')
 var url = require('url')
+var uuid = require('uuid/v4')
 var os = require('os')
 var path = require('path')
 var fs = require('fs')
@@ -65,12 +66,19 @@ function Server (btClient, opts) {
   function onConnection (socket) {
     socket.setTimeout(36000000)
     sockets.push(socket)
+
+    // TODO: find a way to identify users and have one instance of Transcoder/user
+    socket.id = uuid();
+    
     socket.once('close', function () {
+      console.log('close socket');
       arrayRemove(sockets, sockets.indexOf(socket))
+      transcoder.killProcess();
     })
   }
 
   function onRequest (req, res) {
+    console.log('socket id', req.socket.id);
     var parsedUrl = url.parse(req.url, true);
     var pathname = parsedUrl.pathname
     var queryString = parsedUrl.query

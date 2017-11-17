@@ -70,7 +70,7 @@ class Transcoder {
     return !mimeType.match(/mp4$/);
   }
 
-  killPreviousProcess() {
+  killProcess() {
     if(this.command && this.status === TRANSCODER_STATUS.RUNNING) {
       console.log('Killing previous Ffmpeg process for this transcoder.');
       this.command.kill();
@@ -79,7 +79,7 @@ class Transcoder {
   }
 
   async transcode(input, output, options = {}) {
-    this.killPreviousProcess();
+    this.killProcess();
 
     return new Promise((resolve, reject) => {
       this.status = TRANSCODER_STATUS.RUNNING;
@@ -118,7 +118,7 @@ class Transcoder {
         })
         .on('error', e => {
           console.log('Transcoding error.');
-          this.killPreviousProcess();
+          this.killProcess();
           this.status = TRANSCODER_STATUS.ERROR;
           return reject(e);
         })
@@ -127,7 +127,7 @@ class Transcoder {
         })*/
         .on('end', () => {
           console.log('Transcoding ended.');
-          this.killPreviousProcess();
+          this.killProcess();
           this.status = TRANSCODER_STATUS.ENDED;
           return resolve();
         });
