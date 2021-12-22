@@ -2,9 +2,13 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
 const arch = require('arch');
-
 const mime = require('mime');
+
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
 const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -166,44 +170,6 @@ class Transcoder {
       });
     });
   }
-
-  static setFfmpegPath() {
-    let ffmpegPath = path.join(__dirname, 'vendor', 'ffmpeg');
-    
-    const platform = os.platform();
-    
-    if (platform === 'win32') {
-      ffmpegPath += '.exe';
-    }
-
-    try {
-      const stats = fs.statSync(ffmpegPath);
-      ffmpeg.setFfmpegPath(ffmpegPath);
-    } catch(e) {
-      console.log('Missing ffmpeg executable for platform "' + platform + '" with arch "' + arch() + '". Will try to use the ffmpeg installed on the system.');
-    }
-  }
-  
-  static setFfprobePath() {
-    let ffprobePath = path.join(__dirname, 'vendor', 'ffprobe');
-    
-    const platform = os.platform();
-    
-    if (platform === 'win32') {
-      ffprobePath += '.exe';
-    }
-
-    try {
-      const stats = fs.statSync(ffprobePath);
-      ffmpeg.setFfprobePath(ffprobePath);
-    } catch(e) {
-      console.log('Missing ffprobe executable for platform "' + platform + '" with arch "' + arch() + '". Will try to use the ffmpeg installed on the system.');
-    }
-  }
 }
-
-// Sync method to set Ffmpeg path, only called once for all transcoders
-Transcoder.setFfmpegPath();
-Transcoder.setFfprobePath();
 
 module.exports = Transcoder;
