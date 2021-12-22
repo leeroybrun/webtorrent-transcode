@@ -8,7 +8,7 @@ var mime = require('mime')
 var pump = require('pump')
 var rangeParser = require('range-parser')
 var url = require('url')
-var uuid = require('uuid/v4')
+const { v4: uuidv4 } = require('uuid');
 var os = require('os')
 var path = require('path')
 var fs = require('fs')
@@ -68,7 +68,7 @@ function Server (btClient, opts) {
     sockets.push(socket)
 
     // TODO: find a way to identify users and have one instance of Transcoder/user
-    socket.id = uuid();
+    socket.id = uuidv4();
     
     socket.once('close', function () {
       console.log('close socket');
