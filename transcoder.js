@@ -117,7 +117,7 @@ class Transcoder {
           //'-movflags faststart', // https://superuser.com/questions/438390/creating-mp4-videos-ready-for-http-streaming
           '-preset ultrafast', // https://trac.ffmpeg.org/wiki/Encode/H.264#a2.Chooseapreset
           '-tune zerolatency', // https://superuser.com/a/564404,
-          '-movflags isml+frag_keyframe+empty_moov',
+          '-movflags isml+frag_keyframe+empty_moov+faststart',
           '-f ismv',
 
           // Probably don't need this as we are outputing to a temp file
