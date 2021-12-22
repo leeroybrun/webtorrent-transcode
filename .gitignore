@@ -1,5 +1,4 @@
-vendor/*
-!vendor/.gitkeep 
+.DS_Store
 
 # Logs
 logs
