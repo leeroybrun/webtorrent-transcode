@@ -172,12 +172,12 @@ function Server (btClient, opts) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    function serveFile (file) {
+    async function serveFile (file) {
       res.statusCode = 200
 
       if(queryString && 'metadata' in queryString) {
         console.log('querying metadata');
-        transcoder.getMetadata(file.createReadStream()).then((metadata) => {
+        Transcoder.getMetadata(file.createReadStream()).then((metadata) => {
           console.log('metadata', metadata);
           return res.end(JSON.stringify(metadata));
         }).catch(reason => {
@@ -190,7 +190,7 @@ function Server (btClient, opts) {
 
       res.setHeader('Content-Type', 'video/mp4'); //mime.getType(file.name))
 
-      const fileNeedsTranscoding = Transcoder.needsTranscoding(file.name);
+      const fileNeedsTranscoding = await Transcoder.needsTranscoding(file.createReadStream());
 
       // Set name of file (for "Save Page As..." dialog)
       /*res.setHeader(

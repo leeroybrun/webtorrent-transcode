@@ -73,9 +73,33 @@ class Transcoder {
     this.status = null;
   }
 
-  static needsTranscoding(fileName) {
-    const mimeType = mime.getType(fileName);
-    return !mimeType.match(/mp4$/);
+  static async needsTranscoding(input) {
+    let transcode = { video: false, audio: false };
+
+    try {
+      const metadata = await Transcoder.getMetadata(input);
+
+      transcode = metadata.streams.reduce(function(ret, stream) {
+        ret[stream.codec_type] = ret[stream.codec_type] || !Transcoder.streamShouldTransmux(stream);
+        return ret;
+      }, transcode)
+    } catch(e) {
+      console.log('Cannot get metadata: '+ e);
+      return null;
+    }
+    
+    return transcode.video;
+  }
+
+  static streamShouldTransmux(stream) {
+    var type = stream.codec_type;
+    var name = stream.codec_name.toLowerCase();
+
+    if (type == 'video') {
+      return name.indexOf('h264') != -1;
+    } else if (type == 'audio') {
+      return name.indexOf('aac') != -1;
+    }
   }
 
   killProcess() {
@@ -159,7 +183,7 @@ class Transcoder {
     });
   }
 
-  async getMetadata(input) {
+  static async getMetadata(input) {
     return new Promise((resolve, reject) => {
       ffmpeg.ffprobe(input, (err, metadata) => {
         if(err) {
