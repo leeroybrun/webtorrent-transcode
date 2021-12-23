@@ -120,7 +120,7 @@ class Transcoder {
 
       this.command = new ffmpeg()
         .input(input)
-        .output(output)
+        .output(output, { end: true })
         /*  We can't use WebM as it's not compatible with Safari/iOS : https://caniuse.com/#feat=webm
         .videoCodec('libvpx')
         .audioCodec('libvorbis')

@@ -250,7 +250,7 @@ function Server (btClient, opts) {
 
         const seekTime = queryString && queryString.time ? parseInt(queryString.time) : 0;
 
-        transcoder.transcode(file.createReadStream(), tmpFile, {
+        transcoder.transcode(file.createReadStream(), res, {
           seek: seekTime,
           onStart: async () => {
             //pump(fs.createReadStream(tmpFile), res)
